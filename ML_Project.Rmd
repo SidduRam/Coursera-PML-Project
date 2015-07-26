@@ -1,0 +1,96 @@
+---
+title: "Practical Machine Learning Assignment"
+output:
+  pdf_document:
+    fig_caption: yes
+    keep_tex: yes
+  html_document:
+    keep_md: yes
+---
+## Executive summary
+Analyze the device data from Jawbone Up, Nike FuelBand, and Fitbit for 6 participants, from  their ccelerometers on the belt, forearm, arm, and dumbelldata for 5 dataset using linear regression models.  This learning will quantify how much of a particular activity they do, but they rarely quantify how well they do it. 
+
+## Reading the data 
+### The Raw Data - Download the file if does not exist in local system
+```{r eval=TRUE, echo=TRUE, include=TRUE, message=FALSE, warning=FALSE, cache=FALSE}
+if (!file.exists("./Data/pml-training.csv")){
+  download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv",
+                "./Data/pml-training.csv")
+}
+if (!file.exists("./Data/pml-testing.csv")){
+  download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv",
+                "./Data/pml-testing.csv")
+}
+```
+
+### Load the training and testing data
+```{r eval=TRUE, echo=TRUE, include=TRUE, message=FALSE, warning=FALSE, cache=FALSE}
+trainingdata = read.csv("./Data/pml-training.csv", na.strings = c("NA", ""))
+dim(trainingdata); summary(trainingdata$classe)
+testingdata = read.csv("./Data/pml-testing.csv", na.strings = c("NA", ""))
+```
+
+### Load the library
+```{r eval=TRUE, echo=TRUE, include=TRUE, message=FALSE, warning=FALSE, cache=FALSE}
+library(ggplot2); library(caret);library(randomForest)
+```
+
+### Removing nerar Zero covariates
+```{r eval=TRUE, echo=TRUE, include=TRUE, message=FALSE, warning=FALSE, cache=FALSE}
+nzv <- nearZeroVar(trainingdata,saveMetrics=TRUE)
+trainingdata <- trainingdata[,nzv$nzv==FALSE]
+
+nzv <- nearZeroVar(testingdata,saveMetrics=TRUE)
+testingdata <- testingdata[,nzv$nzv==FALSE]
+```                   
+
+## Partioning the training datset 
+```{r eval=TRUE, echo=TRUE, include=TRUE, message=FALSE, warning=FALSE, cache=FALSE}
+inTrain <- createDataPartition(y=trainingdata$classe, p=0.6, list=FALSE)
+projTraining <- trainingdata[inTrain, ]; projTesting <- trainingdata[-inTrain, ]
+dim(projTraining); dim(projTesting)
+```
+
+### Killing first column of Dataset(ID Removing first ID variable) so that it does not interfer with ML Algorithms. 
+```{r eval=TRUE, echo=TRUE, include=TRUE, message=FALSE, warning=FALSE, cache=FALSE}
+projTraining <- projTraining[c(-1)]
+```
+
+### Remove the columns / Variables has too many NAs (keep only the variable > 60% threshold of NA's)
+```{r eval=TRUE, echo=TRUE, include=TRUE, message=FALSE, warning=FALSE, cache=FALSE}
+subprojTraining <- projTraining 
+for(i in 1:length(projTraining)) { 
+  if( sum( is.na( projTraining[, i] ) ) /nrow(projTraining) >= .6 ) { 
+    for(j in 1:length(subprojTraining)) {
+      if( length( grep(names(projTraining[i]), names(subprojTraining)[j]) ) ==1)  { 
+        subprojTraining <- subprojTraining[ , -j] 
+      }   
+    } 
+  }
+}
+
+#To check the new NA's of observations
+dim(subprojTraining); str(subprojTraining)
+
+clean1 <- colnames(subprojTraining)
+clean2 <- colnames(subprojTraining[, -58]) # Remove the classe column 
+projTesting <- projTesting[clean1]; projTraining <- subprojTraining
+testing <- testingdata[clean2]
+
+dim(projTesting); dim(testing)
+```
+## Model Builinding ~ Train model with random forest due to its highly accuracy rate. 
+```{r eval=TRUE, echo=TRUE, include=TRUE, message=FALSE, warning=FALSE, cache=FALSE}
+modFit1 <- randomForest(classe ~. , data=subprojTraining)
+predict1 <- predict(modFit1, projTesting, type = "class")
+confMatrix <- confusionMatrix(predict1, projTesting$classe)
+confMatrix 
+```
+### Let's have a look at the accuracy
+```{r eval=TRUE, echo=TRUE, include=TRUE, message=FALSE, warning=FALSE, cache=FALSE}
+confMatrix$overall[1] # Accuracy - 0.9980882
+```
+### It looks very good, it is more then 99.85%. Random Forests yielded better Results, as expected!
+
+# Conclusion
+The estimate the out of sample error is less than 1% (1 - accuracy). This is a promising result to detect exercise form to quantify how much of a particular activity they do and effective. 
