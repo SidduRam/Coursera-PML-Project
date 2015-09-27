@@ -367,15 +367,13 @@ submission}\label{write-the-results-to-a-text-file-for-submission}
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{pml_write_files =}\StringTok{ }\NormalTok{function(x)\{}
+\NormalTok{pred_write_files =}\StringTok{ }\NormalTok{function(x)\{}
     \NormalTok{n =}\StringTok{ }\KeywordTok{length}\NormalTok{(x)}
     \NormalTok{for(i in }\DecValTok{1}\NormalTok{:n)\{}
         \NormalTok{filename =}\StringTok{ }\KeywordTok{paste0}\NormalTok{(}\StringTok{"problem_id_"}\NormalTok{,i,}\StringTok{".txt"}\NormalTok{)}
         \KeywordTok{write.table}\NormalTok{(x[i],}\DataTypeTok{file=}\NormalTok{filename,}\DataTypeTok{quote=}\OtherTok{FALSE}\NormalTok{,}\DataTypeTok{row.names=}\OtherTok{FALSE}\NormalTok{,}\DataTypeTok{col.names=}\OtherTok{FALSE}\NormalTok{)}
     \NormalTok{\}}
 \NormalTok{\}}
-\CommentTok{# Write the output for all 20 test cases}
-\KeywordTok{pml_write_files}\NormalTok{(prediTest)}
 \end{Highlighting}
 \end{Shaded}
 
