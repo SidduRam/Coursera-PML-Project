@@ -8,7 +8,7 @@ output:
     keep_md: yes
 ---
 ## Executive summary
-Analyze the device data from Jawbone Up, Nike FuelBand, and Fitbit for 6 participants, from  their ccelerometers on the belt, forearm, arm, and dumbelldata for 5 dataset using linear regression models.  This learning will quantify how much of a particular activity they do, but they rarely quantify how well they do it. 
+Analyze the device data from Jawbone Up, Nike FuelBand, and Fitbit for 6 participants, from  their accelerometers on the belt, forearm, arm, and dumbelldata for 5 dataset using linear regression models.  This learning will quantify how much of a particular activity they do, but they rarely quantify how well they do it. 
 
 ## Reading the data 
 ### The Raw Data - Download the file if does not exist in local system
@@ -35,7 +35,7 @@ testingdata = read.csv("./Data/pml-testing.csv", na.strings = c("NA", ""))
 library(ggplot2); library(caret);library(randomForest)
 ```
 
-### Removing nerar Zero covariates
+### Removing near Zero covariates
 ```{r eval=TRUE, echo=TRUE, include=TRUE, message=FALSE, warning=FALSE, cache=FALSE}
 nzv <- nearZeroVar(trainingdata,saveMetrics=TRUE)
 trainingdata <- trainingdata[,nzv$nzv==FALSE]
@@ -69,28 +69,64 @@ for(i in 1:length(projTraining)) {
   }
 }
 
-#To check the new NA's of observations
-dim(subprojTraining); str(subprojTraining)
+projTraining <- subprojTraining
+rm(subprojTraining)
 
-clean1 <- colnames(subprojTraining)
-clean2 <- colnames(subprojTraining[, -58]) # Remove the classe column 
-projTesting <- projTesting[clean1]; projTraining <- subprojTraining
-testing <- testingdata[clean2]
+clean1 <- colnames(projTraining)
+clean2 <- colnames(projTraining[, -58]) # Remove the classe column 
+projTesting <- projTesting[clean1]; # set/allow same variabels which are in Training
+testing <- testingdata[clean2] # allow same variables which are in training
 
 dim(projTesting); dim(testing)
 ```
+
+##Coerce the data into the same type
+```{r eval=TRUE, echo=TRUE, include=TRUE, message=FALSE, warning=FALSE, cache=FALSE}
+for (i in 1:length(testing) ) {
+    for(j in 1:length(projTraining)) {
+        if( length( grep(names(projTraining[i]), names(testing)[j]) ) == 1)  {
+            class(testing[j]) <- class(projTraining[i])
+        }      
+    }      
+}
+
+# To get the same class between testing and myTraining
+testing <- rbind(projTraining[2, -58] , testing)
+testing <- testing[-1,]
+```
+
 ## Model Builinding ~ Train model with random forest due to its highly accuracy rate. 
 ```{r eval=TRUE, echo=TRUE, include=TRUE, message=FALSE, warning=FALSE, cache=FALSE}
-modFit1 <- randomForest(classe ~. , data=subprojTraining)
+set.seed(12345)
+modFit1 <- randomForest(classe ~. , data=projTraining)
+plot(modFit1)
 predict1 <- predict(modFit1, projTesting, type = "class")
 confMatrix <- confusionMatrix(predict1, projTesting$classe)
 confMatrix 
 ```
 ### Let's have a look at the accuracy
 ```{r eval=TRUE, echo=TRUE, include=TRUE, message=FALSE, warning=FALSE, cache=FALSE}
-confMatrix$overall[1] # Accuracy - 0.9980882
+confMatrix$overall[1] 
 ```
-### It looks very good, it is more then 99.85%. Random Forests yielded better Results, as expected!
+### It looks very good, it is more then 99.00%. Random Forests yielded better Results, as expected!
 
+## Predicting Results on the Test Data
+###Random Forests gave an Accuracy in the myTesting dataset of 99.7%, which was more accurate than other models. The expected out-of-sample error is 100-99.77 = 0.23%
+
+```{r eval=TRUE, echo=TRUE, include=TRUE, message=FALSE, warning=FALSE, cache=FALSE}
+prediTest <- predict(modFit1, testing, type = "class")
+prediTest
+```
+# Write the results to a text file for submission
+```{r eval=TRUE, echo=TRUE, include=TRUE, message=FALSE, warning=FALSE, cache=FALSE}
+pred_write_files = function(x){
+    n = length(x)
+    for(i in 1:n){
+        filename = paste0("problem_id_",i,".txt")
+        write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+    }
+}
+
+```
 # Conclusion
 The estimate the out of sample error is less than 1% (1 - accuracy). This is a promising result to detect exercise form to quantify how much of a particular activity they do and effective. 

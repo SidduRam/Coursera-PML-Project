@@ -1,3 +1,9 @@
+# To work Tableau software
+install.packages("Rserve")
+library(Rserve)
+Rserve()
+
+
 # MC - Wages Datset - ISLR
 #-------------------------------
 

@@ -42,6 +42,7 @@ confusionMatrix(testing$diagnosis, predict(modelFit,testing))
 # answer to question
 IL_str <- grep("^IL", colnames(training), value = TRUE)
 preProc <- preProcess(training[, IL_str], method = "pca", thresh = 0.8)
+preProc  # 9 components
 preProc$rotation
 
 
